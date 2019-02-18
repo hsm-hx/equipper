@@ -1,51 +1,52 @@
 package main
 
 import (
-	"encoding/json"
+	"flag"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/nlopes/slack"
 	"net/http"
-  "flag"
 )
 
 func main() {
-  var verificationToken string
+	var verificationToken string
 
-  flag.StringVar(&verificationToken, "token", "YOUR_VERIFICATION_TOKEN_HERE", "Your Slash Verification Token")
-  flag.Parse()
-  fmt.Println("Your slash verification token ->", verificationToken)
+	flag.StringVar(&verificationToken, "token", "YOUR_VERIFICATION_TOKEN_HERE", "Your Slash Verification Token")
+	flag.Parse()
+	fmt.Println("Your slash verification token ->", verificationToken)
 
-	http.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
-    // コマンドをパースする
-		s, err := slack.SlashCommandParse(r)
+	r := gin.Default()
+	r.POST("/hello", func(c *gin.Context) {
+		// コマンドをパースする
+		s, err := slack.SlashCommandParse(c.Request)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{})
 			return
 		}
 
-    // トークン認証
+		// トークン認証
 		if !s.ValidateToken(verificationToken) {
-			w.WriteHeader(http.StatusUnauthorized)
+			c.JSON(http.StatusUnauthorized, gin.H{})
 			return
 		}
 
-    // コマンドの種類によってレスポンスを変える
+		// コマンドの種類によってレスポンスを変える
 		switch s.Command {
 		case "/hello":
-      // 返すメッセージ
-			params := &slack.Msg{Text: "Hello"}
-			b, err := json.Marshal(params)
+			// 返すメッセージ
+      params := &slack.Msg{Text: "Hello"}
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				c.JSON(http.StatusInternalServerError, gin.H{})
 				return
 			}
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(b)
+
+			c.JSON(200, params)
 		default:
-			w.WriteHeader(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{})
 			return
 		}
 	})
+
 	fmt.Println("[INFO] Server Listening")
-	http.ListenAndServe(":3000", nil)
+	r.Run(":3000")
 }
