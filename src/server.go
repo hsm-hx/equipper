@@ -8,9 +8,22 @@ import (
 	"net/http"
 )
 
+func commandResponse(s slack.SlashCommand) (c int, params slack.Msg) {
+	switch s.Command {
+	case "/hello":
+		params := slack.Msg{Text: "Hello"}
+
+		return http.StatusOK, params
+
+	default:
+		return http.StatusInternalServerError, slack.Msg{}
+	}
+}
+
 func main() {
 	var verificationToken string
 
+	// フラグ解析
 	flag.StringVar(&verificationToken, "token", "YOUR_VERIFICATION_TOKEN_HERE", "Your Slash Verification Token")
 	flag.Parse()
 	fmt.Println("Your slash verification token ->", verificationToken)
@@ -30,21 +43,8 @@ func main() {
 			return
 		}
 
-		// コマンドの種類によってレスポンスを変える
-		switch s.Command {
-		case "/hello":
-			// 返すメッセージ
-      params := &slack.Msg{Text: "Hello"}
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{})
-				return
-			}
-
-			c.JSON(200, params)
-		default:
-			c.JSON(http.StatusInternalServerError, gin.H{})
-			return
-		}
+		// コマンドに応じてレスポンス
+		c.JSON(commandResponse(s))
 	})
 
 	fmt.Println("[INFO] Server Listening")
