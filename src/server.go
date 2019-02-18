@@ -16,7 +16,7 @@ func main() {
 	fmt.Println("Your slash verification token ->", verificationToken)
 
 	r := gin.Default()
-	r.POST("/hello", func(c *gin.Context) {
+	r.POST("/cmd", func(c *gin.Context) {
 		// コマンドをパースする
 		s, err := slack.SlashCommandParse(c.Request)
 		if err != nil {
