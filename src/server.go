@@ -16,20 +16,24 @@ func main() {
   fmt.Println("Your slash verification token ->", verificationToken)
 
 	http.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+    // コマンドをパースする
 		s, err := slack.SlashCommandParse(r)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
+    // トークン認証
 		if !s.ValidateToken(verificationToken) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
+    // コマンドの種類によってレスポンスを変える
 		switch s.Command {
 		case "/hello":
-			params := &slack.Msg{Text: s.Text}
+      // 返すメッセージ
+			params := &slack.Msg{Text: "Hello"}
 			b, err := json.Marshal(params)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
