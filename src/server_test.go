@@ -1,36 +1,103 @@
 package main
 
 import (
-	"fmt"
-	"github.com/nlopes/slack"
-	"net/http"
+	"database/sql"
 	"testing"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
-func TestCommandResponseHello(t *testing.T) {
-	s := slack.SlashCommand{
-		Token:      "Gq0rL1ZBphpmFvqYcGGwLMQF",
-		TeamID:     "T5BTQ05J4",
-		TeamDomain: "ube-computerclub",
-		Command:    "/hello",
-		Text:       "",
+func TestConverseEquipType(t *testing.T) {
+	n := converseEquipType("BOOK")
+	if n != 1 {
+		t.Fatal("Failed test: BOOK is type 1")
 	}
 
-	code, params := commandResponse(s)
-
-	if code != http.StatusOK {
-		t.Fatal("Failed test: /hello expect StatusOK")
-	}
-	if params.Text != "Hello" {
-		t.Fatal("Failed test: /hello expect StatusOK")
+	n = converseEquipType("COMPUTER")
+	if n != 2 {
+		t.Fatal("Failed test: COMPUTER is type 2")
 	}
 
-	s.Token = "THIS_IS_DUMMY_TOKEN"
-
-	code, params = commandResponse(s)
-	fmt.Println(code)
-
-	if code != http.StatusInternalServerError {
-		t.Fatal("Failed test: /hello expect StatusInternalServerError")
+	n = converseEquipType("SUPPLY")
+	if n != 3 {
+		t.Fatal("Failed test: SUPPLY is type 3")
 	}
+
+	n = converseEquipType("CABLE")
+	if n != 4 {
+		t.Fatal("Failed test: CABLE is type 4")
+	}
+
+	n = converseEquipType("OTHER")
+	if n != 0 {
+		t.Fatal("Failed test: OTHER is type 0")
+	}
+}
+
+func TestParseAddText(t *testing.T) {
+	s := "EQUIP_NAME BOOK OWNER_NAME"
+	e := parseAddText(s)
+
+	expectEquip := Equip{
+		Title: "EQUIP_NAME",
+		Type:  1,
+		Owner: "OWNER_NAME",
+	}
+	if e != expectEquip {
+		t.Fatal("Failed test: parseAddText")
+	}
+
+	s = "EQUIP_NAME OTHER"
+	e = parseAddText(s)
+
+	expectEquip = Equip{
+		Title: "EQUIP_NAME",
+		Type:  0,
+		Owner: "computer_club",
+	}
+	if e != expectEquip {
+		t.Fatal("Failed test: parseAddText")
+	}
+}
+
+func TestAddEquip(t *testing.T) {
+	db, err := sql.Open("sqlite3", "./equip.db")
+	if err != nil {
+		panic(err)
+	}
+
+	e := Equip{
+		Title: "EQUIP_NAME",
+		Type:  1,
+		Owner: "computer_club",
+	}
+
+	id := addEquip(e, db)
+
+	res := db.QueryRow("SELECT * FROM EQUIPS WHERE ID = ?", id)
+
+	var (
+		title    string
+		eType    int
+		owner    string
+		due      string
+		borrower string
+		state    int
+		remark   string
+	)
+
+	err = res.Scan(&id, &title, &eType, &owner, &due, &borrower, &state, &remark)
+
+	if err == sql.ErrNoRows {
+		t.Fatal("Failed test: Cannot insert equipment")
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	if title != "EQUIP_NAME" || eType != 1 || owner != "computer_club" {
+		t.Fatal("Failed test: Cannot insert equipment")
+	}
+
+	db.Exec(`DELETE FROM EQUIPS WHERE ID = ?`, id)
 }
