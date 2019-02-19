@@ -22,6 +22,15 @@ type Equip struct {
 	Remark  string
 }
 
+func createDatabase(db *sql.DB) {
+  _, err := db.Exec(
+		`CREATE TABLE IF NOT EXISTS "EQUIPS" ("ID" INTEGER PRIMARY KEY, "TITLE" TEXT, "TYPE" INTEGER, "OWNER" TEXT, "DUE_DATE" TEXT DEFAULT CURRENT_DATE, "BORROWER" TEXT DEFAULT "", "STATE" INTEGER DEFAULT 0, "REMARK" TEXT DEFAULT "")`,
+	)
+  if err != nil {
+    panic(err)
+  }
+}
+
 func converseEquipType(s string) (n int) {
 	switch s {
 	case "BOOK":
@@ -104,19 +113,17 @@ func main() {
 
 	// サーバー準備
 	r := gin.Default()
-
 	// DB準備
 	db, err := sql.Open("sqlite3", "./equip.db")
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = db.Exec(
-		`CREATE TABLE IF NOT EXISTS "EQUIPS" ("ID" INTEGER PRIMARY KEY, "TITLE" TEXT, "TYPE" INTEGER, "OWNER" TEXT, "DUE_DATE" TEXT DEFAULT CURRENT_DATE, "BORROWER" TEXT DEFAULT "", "STATE" INTEGER DEFAULT 0, "REMARK" TEXT DEFAULT "")`,
-	)
-	if err != nil {
-		panic(err)
-	}
+  _, err = db.Exec(`SELECT * FROM EQUIPS`, )
+  if err != nil {
+    createDatabase(db)
+    return
+  }
 
 	r.POST("/cmd", func(c *gin.Context) {
 		// コマンドをパースする
