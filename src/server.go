@@ -90,11 +90,11 @@ func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg)
 
 		return http.StatusOK, params
 
-	case "/addEquip":
+	case "/equipadd":
 		e := parseAddText(s.Text)
 		addEquip(e, db)
 
-		params := slack.Msg{Text: "Added new Equipment: " + e.Title}
+		params := slack.Msg{Text: "新しい備品を追加しました: " + e.Title}
 
 		return http.StatusOK, params
 
