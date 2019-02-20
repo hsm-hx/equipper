@@ -8,52 +8,63 @@ import (
 )
 
 func TestConverseEquipType(t *testing.T) {
-	n := converseEquipType("BOOK")
-	if n != 1 {
+	n, err := converseEquipType("BOOK")
+	if n != 1 || err != nil {
 		t.Fatal("Failed test: BOOK is type 1")
 	}
 
-	n = converseEquipType("COMPUTER")
-	if n != 2 {
+	n, err = converseEquipType("COMPUTER")
+	if n != 2 || err != nil {
 		t.Fatal("Failed test: COMPUTER is type 2")
 	}
 
-	n = converseEquipType("SUPPLY")
-	if n != 3 {
+	n, err = converseEquipType("SUPPLY")
+	if n != 3 || err != nil {
 		t.Fatal("Failed test: SUPPLY is type 3")
 	}
 
-	n = converseEquipType("CABLE")
-	if n != 4 {
+	n, err = converseEquipType("CABLE")
+	if n != 4 || err != nil {
 		t.Fatal("Failed test: CABLE is type 4")
 	}
 
-	n = converseEquipType("OTHER")
-	if n != 0 {
+	n, err = converseEquipType("OTHER")
+	if n != 0 || err != nil {
 		t.Fatal("Failed test: OTHER is type 0")
+	}
+
+	n, err = converseEquipType("UNDEFINED")
+	if err != BorrowEquipError {
+		t.Fatal("Failed test: UNDEFINED is type -: ", err)
 	}
 }
 
 func TestParseAddText(t *testing.T) {
 	s := "EQUIP_NAME BOOK OWNER_NAME"
-	e := parseAddText(s)
+	e, err := parseAddText(s)
 
 	expectEquip := Equip{
 		Title: "EQUIP_NAME",
 		Type:  1,
 		Owner: "OWNER_NAME",
 	}
+	if err != nil {
+		t.Fatal("Failed test: ", err)
+	}
 	if e != expectEquip {
 		t.Fatal("Failed test: parseAddText")
 	}
 
 	s = "EQUIP_NAME OTHER"
-	e = parseAddText(s)
+	e, err = parseAddText(s)
 
 	expectEquip = Equip{
 		Title: "EQUIP_NAME",
 		Type:  0,
 		Owner: "computer_club",
+	}
+	if err != nil {
+		t.Fatal("Failed test: ", err)
 	}
 	if e != expectEquip {
 		t.Fatal("Failed test: parseAddText")

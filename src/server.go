@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,10 @@ type Equip struct {
 	Remark   string
 }
 
+var (
+	BorrowEquipError = errors.New("BorrowEquipError")
+)
+
 func createDatabase(db *sql.DB) {
 	_, err := db.Exec(
 		`CREATE TABLE IF NOT EXISTS "EQUIPS" ("ID" INTEGER PRIMARY KEY, "TITLE" TEXT, "TYPE" INTEGER, "OWNER" TEXT, "DUE_DATE" TEXT DEFAULT CURRENT_DATE, "BORROWER" TEXT DEFAULT "", "STATE" INTEGER DEFAULT 0, "REMARK" TEXT DEFAULT "")`,
@@ -33,7 +38,7 @@ func createDatabase(db *sql.DB) {
 	}
 }
 
-func converseEquipType(s string) (n int) {
+func converseEquipType(s string) (n int, err error) {
 	switch s {
 	case "BOOK":
 		n = 1
@@ -43,23 +48,31 @@ func converseEquipType(s string) (n int) {
 		n = 3
 	case "CABLE":
 		n = 4
-	default:
+	case "OTHER":
 		n = 0
+	default:
+		err = BorrowEquipError
+		n = 99
 	}
 
 	return
 }
 
-func parseAddText(s string) (e Equip) {
+func parseAddText(s string) (e Equip, err error) {
 	a := strings.Split(s, " ")
 
 	if len(a) <= 2 {
 		a = append(a, "computer_club")
 	}
 
+	eType, err := converseEquipType(a[1])
+	if err == BorrowEquipError {
+		return
+	}
+
 	e = Equip{
 		Title: a[0],
-		Type:  converseEquipType(a[1]),
+		Type:  eType,
 		Owner: a[2],
 	}
 
@@ -164,11 +177,20 @@ func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg)
 		return http.StatusOK, params
 
 	case "/equipadd":
-		e := parseAddText(s.Text)
+		e, err := parseAddText(s.Text)
+
+		if err == BorrowEquipError {
+			params := slack.Msg{
+				Text: "TYPEはBOOK, COMPUTER, SUPPLY, CABLE, OTHERより選択してください",
+			}
+			return http.StatusOK, params
+		} else if err != nil {
+			panic(err)
+		}
+
 		addEquip(e, db)
 
 		params := slack.Msg{Text: "新しい備品を追加しました: " + e.Title}
-
 		return http.StatusOK, params
 
 	case "/equipdelete":
