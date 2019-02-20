@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/nlopes/slack"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -65,6 +66,29 @@ func parseAddText(s string) (e Equip) {
 	return
 }
 
+func selectEquips(db *sql.DB) (equips []Equip) {
+	rows, err := db.Query(
+		`SELECT * FROM EQUIPS`,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var e Equip
+
+		if err := rows.Scan(&e.Id, &e.Title, &e.Type, &e.Owner, &e.DueDate, &e.Borrower, &e.State, &e.Remark); err != nil {
+			log.Fatal("rows.Scan()", err)
+			return
+		}
+
+		equips = append(equips, e)
+	}
+
+	return
+}
+
 func selectEquipFromId(id int, db *sql.DB) (e Equip) {
 	res := db.QueryRow(`SELECT * FROM EQUIPS WHERE ID = ?`, id)
 
@@ -115,7 +139,7 @@ func borrowEquip(id int, name string, db *sql.DB) (e Equip) {
 	return
 }
 
-func returnEquip(id int, name string, db *sql.DB) (string) {
+func returnEquip(id int, name string, db *sql.DB) string {
 	e := selectEquipFromId(id, db)
 	if e.State != 1 || e.Borrower != name {
 		return "err"
@@ -170,7 +194,7 @@ func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg)
 
 	case "/equipreturn":
 		id, _ := strconv.Atoi(s.Text)
-    e := selectEquipFromId(id, db)
+		e := selectEquipFromId(id, db)
 		str := returnEquip(id, s.UserName, db)
 
 		var params slack.Msg
@@ -207,13 +231,20 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	_, err = db.Exec(`SELECT * FROM EQUIPS`)
 	if err != nil {
 		createDatabase(db)
 		return
 	}
+	// HTML準備
+	r.LoadHTMLGlob("template/*.tmpl")
 
+	r.GET("/equip", func(c *gin.Context) {
+		e := selectEquips(db)
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			"equips": e,
+		})
+	})
 	r.POST("/cmd", func(c *gin.Context) {
 		// コマンドをパースする
 		s, err := slack.SlashCommandParse(c.Request)
