@@ -118,9 +118,18 @@ func TestSelectEquipFromId(t *testing.T) {
 	}
 
 	id := 1
-	e := selectEquipFromId(id, db)
+	e, err := selectEquipFromId(id, db)
+	if err != nil {
+		t.Fatal("Failed test: ", err)
+	}
 	if e.Id != 1 {
 		t.Fatal("Failed test: Cannot select equipment")
+	}
+
+	id = 99
+	e, err = selectEquipFromId(id, db)
+	if err != sql.ErrNoRows {
+		t.Fatal("Failed test: ", err)
 	}
 }
 
@@ -130,10 +139,25 @@ func TestBorrowEquip(t *testing.T) {
 		panic(err)
 	}
 
-	e := borrowEquip(1, "user", db)
+	e, err := borrowEquip(1, "user", db)
 
+	if err != nil {
+		t.Fatal("Failed test: ", err)
+	}
 	if e.State != 1 || e.Borrower != "user" {
 		t.Fatal("Failed test: Cannot borrow equipment")
+	}
+
+	// 存在しない備品は借りられない
+	e, err = borrowEquip(99, "user", db)
+	if err != BorrowEquipError {
+		t.Fatal("Failed test: ", err)
+	}
+
+	// 借りた上から借りられない
+	e, err = borrowEquip(1, "user", db)
+	if err != BorrowEquipError {
+		t.Fatal("Failed test: ", err)
 	}
 }
 
@@ -143,13 +167,16 @@ func TestReturnEquip(t *testing.T) {
 		panic(err)
 	}
 
-	str := returnEquip(1, "user", db)
-	if str != "" {
-		t.Fatal("Failed test: Cannot return equipment")
+	err = returnEquip(1, "user", db)
+	if err != nil {
+		t.Fatal("Failed test: ", err)
 	}
 
-	e := selectEquipFromId(1, db)
-	if e.State != 0 || e.Borrower != "" {
+	e, err := selectEquipFromId(1, db)
+	if err != nil {
+		t.Fatal("Failed test: ", err)
+	}
+	if e.State != 0 {
 		t.Fatal("Failed test: Cannot return equipment")
 	}
 }

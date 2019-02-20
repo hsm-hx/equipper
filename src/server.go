@@ -102,11 +102,13 @@ func selectEquips(db *sql.DB) (equips []Equip) {
 	return
 }
 
-func selectEquipFromId(id int, db *sql.DB) (e Equip) {
+func selectEquipFromId(id int, db *sql.DB) (e Equip, err error) {
 	res := db.QueryRow(`SELECT * FROM EQUIPS WHERE ID = ?`, id)
 
-	err := res.Scan(&e.Id, &e.Title, &e.Type, &e.Owner, &e.DueDate, &e.Borrower, &e.State, &e.Remark)
-	if err != nil {
+	err = res.Scan(&e.Id, &e.Title, &e.Type, &e.Owner, &e.DueDate, &e.Borrower, &e.State, &e.Remark)
+	if err == sql.ErrNoRows {
+		return
+	} else if err != nil {
 		panic(err)
 	}
 
@@ -139,8 +141,16 @@ func deleteEquip(id int, db *sql.DB) {
 	}
 }
 
-func borrowEquip(id int, name string, db *sql.DB) (e Equip) {
-	_, err := db.Exec(`UPDATE EQUIPS SET STATE = 1, BORROWER = ? WHERE ID = ?`,
+func borrowEquip(id int, name string, db *sql.DB) (e Equip, err error) {
+	e, err = selectEquipFromId(id, db)
+	if e.State == 1 || err == sql.ErrNoRows {
+		err = BorrowEquipError
+		return
+	} else if err != nil {
+		panic(err)
+	}
+
+	_, err = db.Exec(`UPDATE EQUIPS SET STATE = 1, BORROWER = ? WHERE ID = ?`,
 		name,
 		id,
 	)
@@ -148,17 +158,23 @@ func borrowEquip(id int, name string, db *sql.DB) (e Equip) {
 		panic(err)
 	}
 
-	e = selectEquipFromId(id, db)
+	e, err = selectEquipFromId(id, db)
 	return
 }
 
-func returnEquip(id int, name string, db *sql.DB) string {
-	e := selectEquipFromId(id, db)
+func returnEquip(id int, name string, db *sql.DB) (err error) {
+	e, err := selectEquipFromId(id, db)
 	if e.State != 1 || e.Borrower != name {
-		return "err"
+		err = BorrowEquipError
+		return
+	}
+	if err == sql.ErrNoRows {
+		return
+	} else if err != nil {
+		panic(err)
 	}
 
-	_, err := db.Exec(`UPDATE EQUIPS SET STATE = 0, BORROWER = ? WHERE ID = ?`,
+	_, err = db.Exec(`UPDATE EQUIPS SET STATE = 0, BORROWER = ? WHERE ID = ?`,
 		"",
 		id,
 	)
@@ -166,7 +182,7 @@ func returnEquip(id int, name string, db *sql.DB) string {
 		panic(err)
 	}
 
-	return ""
+	return
 }
 
 func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg) {
@@ -195,7 +211,16 @@ func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg)
 
 	case "/equipdelete":
 		id, _ := strconv.Atoi(s.Text)
-		e := selectEquipFromId(id, db)
+		e, err := selectEquipFromId(id, db)
+		if err == BorrowEquipError {
+			params := slack.Msg{
+				Text: "id" + s.Text + "の備品は存在しません",
+			}
+
+			return http.StatusOK, params
+		} else if err != nil {
+			panic(err)
+		}
 
 		deleteEquip(id, db)
 
@@ -205,7 +230,14 @@ func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg)
 
 	case "/equipborrow":
 		id, _ := strconv.Atoi(s.Text)
-		e := borrowEquip(id, s.UserName, db)
+		e, err := borrowEquip(id, s.UserName, db)
+
+		if err == sql.ErrNoRows {
+			params := slack.Msg{
+				Text: "id" + s.Text + "の備品は存在しません",
+			}
+			return http.StatusOK, params
+		}
 
 		params := slack.Msg{
 			Text:         s.UserName + "が" + e.Title + "を貸出しました",
@@ -216,11 +248,18 @@ func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg)
 
 	case "/equipreturn":
 		id, _ := strconv.Atoi(s.Text)
-		e := selectEquipFromId(id, db)
-		str := returnEquip(id, s.UserName, db)
+		e, err := selectEquipFromId(id, db)
+		if err == BorrowEquipError {
+			params := slack.Msg{
+				Text: "id" + s.Text + "の備品は存在しません",
+			}
+			return http.StatusOK, params
+		}
+
+		err = returnEquip(id, s.UserName, db)
 
 		var params slack.Msg
-		if str != "" {
+		if err != nil {
 			params = slack.Msg{
 				Text: e.Title + "は現在貸出中でない，またはあなた以外が貸出中です",
 			}
