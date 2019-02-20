@@ -102,6 +102,36 @@ func deleteEquip(id int, db *sql.DB) {
 	}
 }
 
+func borrowEquip(id int, name string, db *sql.DB) (e Equip) {
+	_, err := db.Exec(`UPDATE EQUIPS SET STATE = 1, BORROWER = ? WHERE ID = ?`,
+		name,
+		id,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	e = selectEquipFromId(id, db)
+	return
+}
+
+func returnEquip(id int, name string, db *sql.DB) (string) {
+	e := selectEquipFromId(id, db)
+	if e.State != 1 || e.Borrower != name {
+		return "err"
+	}
+
+	_, err := db.Exec(`UPDATE EQUIPS SET STATE = 0, BORROWER = ? WHERE ID = ?`,
+		"",
+		id,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return ""
+}
+
 func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg) {
 	switch s.Command {
 	case "/hello":
@@ -124,6 +154,36 @@ func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg)
 		deleteEquip(id, db)
 
 		params := slack.Msg{Text: "備品を削除しました: " + e.Title}
+
+		return http.StatusOK, params
+
+	case "/equipborrow":
+		id, _ := strconv.Atoi(s.Text)
+		e := borrowEquip(id, s.UserName, db)
+
+		params := slack.Msg{
+			Text:         s.UserName + "が" + e.Title + "を貸出しました",
+			ResponseType: "in_channel",
+		}
+
+		return http.StatusOK, params
+
+	case "/equipreturn":
+		id, _ := strconv.Atoi(s.Text)
+    e := selectEquipFromId(id, db)
+		str := returnEquip(id, s.UserName, db)
+
+		var params slack.Msg
+		if str != "" {
+			params = slack.Msg{
+				Text: e.Title + "は現在貸出中でない，またはあなた以外が貸出中です",
+			}
+		} else {
+			params = slack.Msg{
+				Text:         s.UserName + "が" + e.Title + "を返却しました",
+				ResponseType: "in_channel",
+			}
+		}
 
 		return http.StatusOK, params
 

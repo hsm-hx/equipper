@@ -113,6 +113,36 @@ func TestSelectEquipFromId(t *testing.T) {
 	}
 }
 
+func TestBorrowEquip(t *testing.T) {
+	db, err := sql.Open("sqlite3", "./equip.db")
+	if err != nil {
+		panic(err)
+	}
+
+	e := borrowEquip(1, "user", db)
+
+	if e.State != 1 || e.Borrower != "user" {
+		t.Fatal("Failed test: Cannot borrow equipment")
+	}
+}
+
+func TestReturnEquip(t *testing.T) {
+	db, err := sql.Open("sqlite3", "./equip.db")
+	if err != nil {
+		panic(err)
+	}
+
+	str := returnEquip(1, "user", db)
+	if str != "" {
+		t.Fatal("Failed test: Cannot return equipment")
+	}
+
+	e := selectEquipFromId(1, db)
+	if e.State != 0 || e.Borrower != "" {
+		t.Fatal("Failed test: Cannot return equipment")
+	}
+}
+
 func TestDeleteEquip(t *testing.T) {
 	id := 0
 
