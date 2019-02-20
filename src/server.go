@@ -8,27 +8,28 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/nlopes/slack"
 	"net/http"
+	"strconv"
 	"strings"
-	"time"
 )
 
 type Equip struct {
-	Id      int
-	Title   string
-	Type    int
-	Owner   string
-	DueDate time.Time
-	State   int
-	Remark  string
+	Id       int
+	Title    string
+	Type     int
+	Owner    string
+	DueDate  string
+	Borrower string
+	State    int
+	Remark   string
 }
 
 func createDatabase(db *sql.DB) {
-  _, err := db.Exec(
+	_, err := db.Exec(
 		`CREATE TABLE IF NOT EXISTS "EQUIPS" ("ID" INTEGER PRIMARY KEY, "TITLE" TEXT, "TYPE" INTEGER, "OWNER" TEXT, "DUE_DATE" TEXT DEFAULT CURRENT_DATE, "BORROWER" TEXT DEFAULT "", "STATE" INTEGER DEFAULT 0, "REMARK" TEXT DEFAULT "")`,
 	)
-  if err != nil {
-    panic(err)
-  }
+	if err != nil {
+		panic(err)
+	}
 }
 
 func converseEquipType(s string) (n int) {
@@ -64,6 +65,17 @@ func parseAddText(s string) (e Equip) {
 	return
 }
 
+func selectEquipFromId(id int, db *sql.DB) (e Equip) {
+	res := db.QueryRow(`SELECT * FROM EQUIPS WHERE ID = ?`, id)
+
+	err := res.Scan(&e.Id, &e.Title, &e.Type, &e.Owner, &e.DueDate, &e.Borrower, &e.State, &e.Remark)
+	if err != nil {
+		panic(err)
+	}
+
+	return
+}
+
 func addEquip(e Equip, db *sql.DB) (id int64) {
 	res, err := db.Exec(
 		`INSERT INTO EQUIPS (TITLE, TYPE, OWNER) VALUES (?, ?, ?)`,
@@ -83,6 +95,13 @@ func addEquip(e Equip, db *sql.DB) (id int64) {
 	return
 }
 
+func deleteEquip(id int, db *sql.DB) {
+	_, err := db.Exec(`DELETE FROM EQUIPS WHERE ID = ?`, id)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg) {
 	switch s.Command {
 	case "/hello":
@@ -95,6 +114,16 @@ func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg)
 		addEquip(e, db)
 
 		params := slack.Msg{Text: "新しい備品を追加しました: " + e.Title}
+
+		return http.StatusOK, params
+
+	case "/equipdelete":
+		id, _ := strconv.Atoi(s.Text)
+		e := selectEquipFromId(id, db)
+
+		deleteEquip(id, db)
+
+		params := slack.Msg{Text: "備品を削除しました: " + e.Title}
 
 		return http.StatusOK, params
 
@@ -119,11 +148,11 @@ func main() {
 		panic(err)
 	}
 
-  _, err = db.Exec(`SELECT * FROM EQUIPS`, )
-  if err != nil {
-    createDatabase(db)
-    return
-  }
+	_, err = db.Exec(`SELECT * FROM EQUIPS`)
+	if err != nil {
+		createDatabase(db)
+		return
+	}
 
 	r.POST("/cmd", func(c *gin.Context) {
 		// コマンドをパースする

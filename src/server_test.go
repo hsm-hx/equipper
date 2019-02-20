@@ -98,6 +98,46 @@ func TestAddEquip(t *testing.T) {
 	if title != "EQUIP_NAME" || eType != 1 || owner != "computer_club" {
 		t.Fatal("Failed test: Cannot insert equipment")
 	}
+}
 
-	db.Exec(`DELETE FROM EQUIPS WHERE ID = ?`, id)
+func TestSelectEquipFromId(t *testing.T) {
+	db, err := sql.Open("sqlite3", "./equip.db")
+	if err != nil {
+		panic(err)
+	}
+
+	id := 1
+	e := selectEquipFromId(id, db)
+	if e.Id != 1 {
+		t.Fatal("Failed test: Cannot select equipment")
+	}
+}
+
+func TestDeleteEquip(t *testing.T) {
+	id := 0
+
+	db, err := sql.Open("sqlite3", "./equip.db")
+	if err != nil {
+		panic(err)
+	}
+
+	deleteEquip(id, db)
+
+	var (
+		title    string
+		eType    int
+		owner    string
+		due      string
+		borrower string
+		state    int
+		remark   string
+	)
+
+	res := db.QueryRow(`SELECT * FROM EQUIPS WHERE ID = ?`, id)
+
+	err = res.Scan(&id, &title, &eType, &owner, &due, &borrower, &state, &remark)
+
+	if err != sql.ErrNoRows {
+		t.Fatal("Failed test: Cannot delete equipment")
+	}
 }
