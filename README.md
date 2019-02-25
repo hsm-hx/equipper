@@ -35,6 +35,6 @@ $ ./server --token=[YOUR_VERIFICATION_TOKEN]
 
 ## このプロジェクトについて
 
-:ok: みなさんからの不具合報告や追加機能のご提案をお待ちしています
-:ok: ぜひ使ってみてください
-:ok: ForkやPull Requestが来ると嬉しい
+:ok: みなさんからの不具合報告や追加機能のご提案をお待ちしています<br>
+:ok: ぜひ使ってみてください<br>
+:ok: ForkやPull Requestが来ると嬉しい<br>
