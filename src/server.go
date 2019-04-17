@@ -38,21 +38,41 @@ func createDatabase(db *sql.DB) {
 	}
 }
 
-func converseEquipType(s string) (n int, err error) {
+func (e *Equip) ConverseEquipType(s string) (err error) {
 	switch s {
 	case "BOOK":
-		n = 1
+		e.Type = 1
 	case "COMPUTER":
-		n = 2
+		e.Type = 2
 	case "SUPPLY":
-		n = 3
+		e.Type = 3
 	case "CABLE":
-		n = 4
+		e.Type = 4
 	case "OTHER":
-		n = 0
+		e.Type = 0
 	default:
 		err = BorrowEquipError
-		n = 99
+		e.Type = 99
+	}
+
+	return
+}
+
+func (e Equip) UnconverseEquipType() (s string, err error) {
+	switch e.Type {
+	case 1:
+		s = "BOOK"
+	case 2:
+		s = "COMPUTER"
+	case 3:
+		s = "SUPPLY"
+	case 4:
+		s = "CABLE"
+	case 0:
+		s = "OTHER"
+	default:
+		err = BorrowEquipError
+		s = ""
 	}
 
 	return
@@ -65,15 +85,15 @@ func parseAddText(s string) (e Equip, err error) {
 		a = append(a, "computer_club")
 	}
 
-	eType, err := converseEquipType(a[1])
-	if err == BorrowEquipError {
-		return
-	}
-
 	e = Equip{
 		Title: a[0],
-		Type:  eType,
+		Type:  99,
 		Owner: a[2],
+	}
+
+	err = e.ConverseEquipType(a[1])
+	if err == BorrowEquipError {
+		return
 	}
 
 	return
@@ -302,6 +322,7 @@ func main() {
 
 	r.GET("/equip", func(c *gin.Context) {
 		e := selectEquips(db)
+
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"equips": e,
 		})

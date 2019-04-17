@@ -8,32 +8,36 @@ import (
 )
 
 func TestConverseEquipType(t *testing.T) {
-	n, err := converseEquipType("BOOK")
-	if n != 1 || err != nil {
-		t.Fatal("Failed test: BOOK is type 1")
-	}
+	e := Equip{}
 
-	n, err = converseEquipType("COMPUTER")
-	if n != 2 || err != nil {
+	/*
+		err := e.ConverseEquipType("BOOK")
+		if e.Type != 1 || err != nil {
+			t.Fatal("Failed test: BOOK is type 1, but output e.Type is ", e.Type)
+		}
+	*/
+
+	err := e.ConverseEquipType("COMPUTER")
+	if e.Type != 2 || err != nil {
 		t.Fatal("Failed test: COMPUTER is type 2")
 	}
 
-	n, err = converseEquipType("SUPPLY")
-	if n != 3 || err != nil {
+	err = e.ConverseEquipType("SUPPLY")
+	if e.Type != 3 || err != nil {
 		t.Fatal("Failed test: SUPPLY is type 3")
 	}
 
-	n, err = converseEquipType("CABLE")
-	if n != 4 || err != nil {
+	err = e.ConverseEquipType("CABLE")
+	if e.Type != 4 || err != nil {
 		t.Fatal("Failed test: CABLE is type 4")
 	}
 
-	n, err = converseEquipType("OTHER")
-	if n != 0 || err != nil {
+	err = e.ConverseEquipType("OTHER")
+	if e.Type != 0 || err != nil {
 		t.Fatal("Failed test: OTHER is type 0")
 	}
 
-	n, err = converseEquipType("UNDEFINED")
+	err = e.ConverseEquipType("UNDEFINED")
 	if err != BorrowEquipError {
 		t.Fatal("Failed test: UNDEFINED is type -: ", err)
 	}
