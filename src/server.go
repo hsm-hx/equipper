@@ -213,7 +213,7 @@ func returnEquip(id int, name string, db *sql.DB) (err error) {
 		panic(err)
 	}
 
-	_, err = db.Exec(`UPDATE EQUIPS SET STATE = 0, BORROWER = ? WHERE ID = ?`,
+	_, err = db.Exec(`UPDATE EQUIPS SET STATE = 0, BORROWER = ?, DUE_DATE = '' WHERE ID = ?`,
 		"",
 		id,
 	)

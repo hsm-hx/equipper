@@ -23,8 +23,10 @@ $ cd equipper
 $ dep ensure
 $ go build ./src
 $ ./server
-$ ./server --token=[YOUR_VERIFICATION_TOKEN]
+$ ./server --token=[YOUR_VERIFICATION_TOKEN] --due=[YOUR_TEAM'S_ LENDING_PERIOD]
 ```
+
+:heavy\_exclamation\_mark: due(貸出期間)のデフォルト値は14(日間)です。
 
 ### 詳しく
 #### 全体の流れ
@@ -46,9 +48,9 @@ $ ./server --token=[YOUR_VERIFICATION_TOKEN]
 - 1 : 備品ID
 - Electronではじめるアプリ開発 : 備品名
 - 1 : 種別
-- computer_club : 持ち主
+- computer\_club : 持ち主
 - 2019-02-20 : 返却期日(になる予定)
-- hsm_hx : 貸出者
+- hsm\_hx : 貸出者
 - 1 : 状態
 
 <br>

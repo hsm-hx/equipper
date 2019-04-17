@@ -205,6 +205,9 @@ func TestReturnEquip(t *testing.T) {
 	if e.State != 0 {
 		t.Fatal("Failed test: Cannot return equipment")
 	}
+	if e.DueDate != "" {
+		t.Fatal("Failed test: Expected DueDate is", "", "but it is", e.DueDate)
+	}
 }
 
 func TestDeleteEquip(t *testing.T) {
