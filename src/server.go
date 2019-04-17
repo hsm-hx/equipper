@@ -14,17 +14,6 @@ import (
 	"strings"
 )
 
-type Equip struct {
-	Id       int
-	Title    string
-	Type     int
-	Owner    string
-	DueDate  string
-	Borrower string
-	State    int
-	Remark   string
-}
-
 var (
 	BorrowEquipError = errors.New("BorrowEquipError")
 )
@@ -36,6 +25,17 @@ func createDatabase(db *sql.DB) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+type Equip struct {
+	Id       int
+	Title    string
+	Type     int
+	Owner    string
+	DueDate  string
+	Borrower string
+	State    int
+	Remark   string
 }
 
 func (e *Equip) ConverseEquipType(s string) (err error) {
@@ -70,6 +70,20 @@ func (e Equip) UnconverseEquipType() (s string, err error) {
 		s = "CABLE"
 	case 0:
 		s = "OTHER"
+	default:
+		err = BorrowEquipError
+		s = ""
+	}
+
+	return
+}
+
+func (e Equip) UnconverseEquipState() (s string, err error) {
+	switch e.State {
+  case 0:
+    s = "○"
+	case 1:
+		s = "×"
 	default:
 		err = BorrowEquipError
 		s = ""
@@ -322,6 +336,14 @@ func main() {
 
 	r.GET("/equip", func(c *gin.Context) {
 		e := selectEquips(db)
+		temp := Equip{
+			Title: "Example Equip",
+			Id:    1,
+			Type:  1,
+			Owner: "computer_club",
+		}
+
+		e = append(e, temp)
 
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"equips": e,

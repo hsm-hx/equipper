@@ -5,15 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>備品一覧 - Equipper</title>
+
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
   </head>
   <body>
-    <h1>備品一覧</h1>
+    <div class="container">
+      <h4 class="mt-4 border-botton">備品一覧</h4>
 
-    <ul>
-      {{range .equips}}
-        <li>{{ .Id }} | {{ .Title }} | {{ .UnconverseEquipType }} | {{ .Owner }} | {{ .DueDate }} | {{ .Borrower }} | {{ .State }} | {{ .Remark }}</li>
-      {{end}}
-    </ul>
-
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">備品名</th>
+            <th scope="col">種別</th>
+            <th scope="col">持ち主</th>
+            <th scope="col">貸出可能</th>
+            <th scope="col">貸出期限</th>
+            <th scope="col">貸出者</th>
+            <th scope="col">備考</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .equips}}
+            <tr>
+              <th scope="row">{{ .Id }}</th>
+              <td>{{ .Title }}</td>
+              <td>{{ .UnconverseEquipType }}</td>
+              <td>{{ .Owner }}</td>
+              <td>{{ .UnconverseEquipState }}</td>
+              <td>{{ .DueDate }}</td>
+              <td>{{ .Borrower }}</td>
+              <td>{{ .Remark }}</td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
   </body>
 </html>
