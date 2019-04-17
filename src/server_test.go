@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"testing"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -10,14 +11,12 @@ import (
 func TestConverseEquipType(t *testing.T) {
 	e := Equip{}
 
-	/*
-		err := e.ConverseEquipType("BOOK")
-		if e.Type != 1 || err != nil {
-			t.Fatal("Failed test: BOOK is type 1, but output e.Type is ", e.Type)
-		}
-	*/
+	err := e.ConverseEquipType("BOOK")
+	if e.Type != 1 || err != nil {
+		t.Fatal("Failed test: BOOK is type 1, but output e.Type is ", e.Type)
+	}
 
-	err := e.ConverseEquipType("COMPUTER")
+	err = e.ConverseEquipType("COMPUTER")
 	if e.Type != 2 || err != nil {
 		t.Fatal("Failed test: COMPUTER is type 2")
 	}
@@ -40,6 +39,22 @@ func TestConverseEquipType(t *testing.T) {
 	err = e.ConverseEquipType("UNDEFINED")
 	if err != BorrowEquipError {
 		t.Fatal("Failed test: UNDEFINED is type -: ", err)
+	}
+}
+
+func TestUnconverseEquipState(t *testing.T) {
+	e := Equip{}
+
+	e.State = 0
+	s, err := e.UnconverseEquipState()
+	if s != "○" || err != nil {
+		t.Fatal("Failed test: State 0 is not borrowing, but output is ", s)
+	}
+
+	e.State = 1
+	s, err = e.UnconverseEquipState()
+	if s != "×" || err != nil {
+		t.Fatal("Failed test: State 1 is borrowing, but output is ", s)
 	}
 }
 
@@ -143,7 +158,11 @@ func TestBorrowEquip(t *testing.T) {
 		panic(err)
 	}
 
-	e, err := borrowEquip(1, "user", db)
+	// 備品が借りられるかテスト
+	e, err := borrowEquip(1, "user", 14, db)
+
+	const layout = "2006-01-02"
+	today := time.Now().AddDate(0, 0, 14).Format(layout)
 
 	if err != nil {
 		t.Fatal("Failed test: ", err)
@@ -151,15 +170,18 @@ func TestBorrowEquip(t *testing.T) {
 	if e.State != 1 || e.Borrower != "user" {
 		t.Fatal("Failed test: Cannot borrow equipment")
 	}
+	if e.DueDate != today {
+		t.Fatal("Failed test: Expected", today, "but result is", e.DueDate)
+	}
 
 	// 存在しない備品は借りられない
-	e, err = borrowEquip(99, "user", db)
+	e, err = borrowEquip(99, "user", 14, db)
 	if err != BorrowEquipError {
 		t.Fatal("Failed test: ", err)
 	}
 
 	// 借りた上から借りられない
-	e, err = borrowEquip(1, "user", db)
+	e, err = borrowEquip(1, "user", 14, db)
 	if err != BorrowEquipError {
 		t.Fatal("Failed test: ", err)
 	}

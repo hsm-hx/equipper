@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -80,8 +81,8 @@ func (e Equip) UnconverseEquipType() (s string, err error) {
 
 func (e Equip) UnconverseEquipState() (s string, err error) {
 	switch e.State {
-  case 0:
-    s = "○"
+	case 0:
+		s = "○"
 	case 1:
 		s = "×"
 	default:
@@ -175,7 +176,7 @@ func deleteEquip(id int, db *sql.DB) {
 	}
 }
 
-func borrowEquip(id int, name string, db *sql.DB) (e Equip, err error) {
+func borrowEquip(id int, name string, due int, db *sql.DB) (e Equip, err error) {
 	e, err = selectEquipFromId(id, db)
 	if e.State == 1 || err == sql.ErrNoRows {
 		err = BorrowEquipError
@@ -184,8 +185,12 @@ func borrowEquip(id int, name string, db *sql.DB) (e Equip, err error) {
 		panic(err)
 	}
 
-	_, err = db.Exec(`UPDATE EQUIPS SET STATE = 1, BORROWER = ? WHERE ID = ?`,
+	const layout = "2006-01-02"
+	date := time.Now().AddDate(0, 0, due).Format(layout)
+
+	_, err = db.Exec(`UPDATE EQUIPS SET STATE = 1, BORROWER = ?, DUE_DATE = ? WHERE ID = ?`,
 		name,
+		date,
 		id,
 	)
 	if err != nil {
@@ -219,7 +224,7 @@ func returnEquip(id int, name string, db *sql.DB) (err error) {
 	return
 }
 
-func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg) {
+func commandResponse(s slack.SlashCommand, due int, db *sql.DB) (c int, params slack.Msg) {
 	switch s.Command {
 	case "/hello":
 		params := slack.Msg{Text: "Hello"}
@@ -264,7 +269,7 @@ func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg)
 
 	case "/equipborrow":
 		id, _ := strconv.Atoi(s.Text)
-		e, err := borrowEquip(id, s.UserName, db)
+		e, err := borrowEquip(id, s.UserName, due, db)
 
 		if err == sql.ErrNoRows {
 			params := slack.Msg{
@@ -313,11 +318,14 @@ func commandResponse(s slack.SlashCommand, db *sql.DB) (c int, params slack.Msg)
 
 func main() {
 	var verificationToken string
+	var borrowDue int
 
 	// フラグ解析
 	flag.StringVar(&verificationToken, "token", "YOUR_VERIFICATION_TOKEN_HERE", "Your Slash Verification Token")
+	flag.IntVar(&borrowDue, "due", 14, "Your team's lending period")
 	flag.Parse()
 	fmt.Println("Your slash verification token ->", verificationToken)
+	fmt.Println("Your team's lending period ->", borrowDue)
 
 	// サーバー準備
 	r := gin.Default()
@@ -364,7 +372,7 @@ func main() {
 		}
 
 		// コマンドに応じてレスポンス
-		c.JSON(commandResponse(s, db))
+		c.JSON(commandResponse(s, borrowDue, db))
 	})
 
 	fmt.Println("[INFO] Server Listening")
