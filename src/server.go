@@ -226,11 +226,6 @@ func returnEquip(id int, name string, db *sql.DB) (err error) {
 
 func commandResponse(s slack.SlashCommand, due int, db *sql.DB) (c int, params slack.Msg) {
 	switch s.Command {
-	case "/hello":
-		params := slack.Msg{Text: "Hello"}
-
-		return http.StatusOK, params
-
 	case "/equipadd":
 		e, err := parseAddText(s.Text)
 
