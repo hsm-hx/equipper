@@ -6,17 +6,19 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/nlopes/slack"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
 	BorrowEquipError = errors.New("BorrowEquipError")
+	numType          = map[string]int{"BOOK": 1, "COMPUTER": 2, "SUPPLY": 3, "CABLE": 4, "OTHER": 0}
 )
 
 func createDatabase(db *sql.DB) {
@@ -40,20 +42,10 @@ type Equip struct {
 }
 
 func (e *Equip) ConverseEquipType(s string) (err error) {
-	switch s {
-	case "BOOK":
-		e.Type = 1
-	case "COMPUTER":
-		e.Type = 2
-	case "SUPPLY":
-		e.Type = 3
-	case "CABLE":
-		e.Type = 4
-	case "OTHER":
-		e.Type = 0
-	default:
+	var ok bool
+	e.Type, ok = numType[s]
+	if ok != true {
 		err = BorrowEquipError
-		e.Type = 99
 	}
 
 	return
@@ -96,6 +88,7 @@ func (e Equip) UnconverseEquipState() (s string, err error) {
 func parseAddText(s string) (e Equip, err error) {
 	a := strings.Split(s, " ")
 
+	// 所有者の指定がなければ
 	if len(a) <= 2 {
 		a = append(a, "computer_club")
 	}
@@ -114,7 +107,7 @@ func parseAddText(s string) (e Equip, err error) {
 	return
 }
 
-func selectEquips(db *sql.DB) (equips []Equip) {
+func selectAllEquips(db *sql.DB) (equips []Equip) {
 	rows, err := db.Query(
 		`SELECT * FROM EQUIPS`,
 	)
@@ -338,15 +331,7 @@ func main() {
 	r.LoadHTMLGlob("template/*.tmpl")
 
 	r.GET("/equip", func(c *gin.Context) {
-		e := selectEquips(db)
-		temp := Equip{
-			Title: "Example Equip",
-			Id:    1,
-			Type:  1,
-			Owner: "computer_club",
-		}
-
-		e = append(e, temp)
+		e := selectAllEquips(db)
 
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"equips": e,
