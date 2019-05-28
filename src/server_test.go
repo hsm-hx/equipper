@@ -48,7 +48,7 @@ func TestParseAddText(t *testing.T) {
 		Owner: "OWNER_NAME",
 	}
 	if err != nil {
-    t.Fatal("Failed test: ", err, "in case s:", s)
+		t.Fatal("Failed test: ", err, "in case s:", s)
 	}
 	if e != expectEquip {
 		t.Fatal("Failed test: unexpected e:", e)

@@ -21,6 +21,7 @@ var (
 	EquipCommandError  = errors.New("EquipCommandError")
 	EquipConverseError = errors.New("EquipConverseError")
 	numType            = map[string]int{"BOOK": 1, "COMPUTER": 2, "SUPPLY": 3, "CABLE": 4, "OTHER": 0}
+	states             = map[int]string{0: "○", 1: "×"}
 )
 
 func createDatabase(db *sql.DB) {
@@ -79,16 +80,12 @@ func (e Equip) UnconverseEquipState() (s string, err error) {
 		s = "○"
 	case 1:
 		s = "×"
-	default:
-		err = BorrowEquipError
-		s = ""
 	}
 
 	return
 }
 
-func parseAddText(s string) (e Equip, err error) {
-	// 先にクォーテーションで囲まれてる範囲を分割する
+func splitEquipTitle(s string) (a string, err error) {
 	if !strings.HasPrefix(s, "\"") {
 		err = EquipCommandError
 		return
@@ -99,23 +96,36 @@ func parseAddText(s string) (e Equip, err error) {
 		err = EquipCommandError
 		return
 	}
-	a := strings.Split(s, "\" ")
-  fmt.Println(a)
 
-	b := strings.Split(a[1], " ")
+	a = strings.Split(s, "\" ")[0]
 
-	// 所有者の指定がなければ
-	if len(b) <= 1 {
-		b = append(b, "computer_club")
+	return
+}
+
+func parseAddText(s string) (e Equip, err error) {
+	t, err := splitEquipTitle(s)
+	if err != nil {
+		return
+	}
+
+	s = strings.TrimLeft(s, "\""+t+"\" ") // コマンド全体からタイトル部分を削除
+	fmt.Println("s:", s)
+	fmt.Println("t:", t)
+
+	var props []string
+	if strings.Contains(s, " ") {
+		props = strings.Split(s, " ")
+	} else {
+		props = append(props, s)
+		props = append(props, "computer_club")
 	}
 
 	e = Equip{
-		Title: a[0],
-		Type:  99,
-		Owner: b[1],
+		Title: t,
+		Owner: props[1],
 	}
 
-	err = e.ConverseEquipType(b[0])
+	err = e.ConverseEquipType(props[0])
 	if err == EquipConverseError {
 		return
 	}
