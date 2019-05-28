@@ -17,8 +17,10 @@ import (
 )
 
 var (
-	BorrowEquipError = errors.New("BorrowEquipError")
-	numType          = map[string]int{"BOOK": 1, "COMPUTER": 2, "SUPPLY": 3, "CABLE": 4, "OTHER": 0}
+	BorrowEquipError   = errors.New("BorrowEquipError")
+	EquipCommandError  = errors.New("EquipCommandError")
+	EquipConverseError = errors.New("EquipConverseError")
+	numType            = map[string]int{"BOOK": 1, "COMPUTER": 2, "SUPPLY": 3, "CABLE": 4, "OTHER": 0}
 )
 
 func createDatabase(db *sql.DB) {
@@ -45,7 +47,7 @@ func (e *Equip) ConverseEquipType(s string) (err error) {
 	var ok bool
 	e.Type, ok = numType[s]
 	if ok != true {
-		err = BorrowEquipError
+		err = EquipConverseError
 	}
 
 	return
@@ -86,21 +88,35 @@ func (e Equip) UnconverseEquipState() (s string, err error) {
 }
 
 func parseAddText(s string) (e Equip, err error) {
-	a := strings.Split(s, " ")
+	// 先にクォーテーションで囲まれてる範囲を分割する
+	if !strings.HasPrefix(s, "\"") {
+		err = EquipCommandError
+		return
+	}
+	s = strings.TrimLeft(s, "\"")
+
+	if !strings.Contains(s, "\"") {
+		err = EquipCommandError
+		return
+	}
+	a := strings.Split(s, "\" ")
+  fmt.Println(a)
+
+	b := strings.Split(a[1], " ")
 
 	// 所有者の指定がなければ
-	if len(a) <= 2 {
-		a = append(a, "computer_club")
+	if len(b) <= 1 {
+		b = append(b, "computer_club")
 	}
 
 	e = Equip{
 		Title: a[0],
 		Type:  99,
-		Owner: a[2],
+		Owner: b[1],
 	}
 
-	err = e.ConverseEquipType(a[1])
-	if err == BorrowEquipError {
+	err = e.ConverseEquipType(b[0])
+	if err == EquipConverseError {
 		return
 	}
 

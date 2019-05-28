@@ -16,28 +16,8 @@ func TestConverseEquipType(t *testing.T) {
 		t.Fatal("Failed test: BOOK is type 1, but output e.Type is ", e.Type)
 	}
 
-	err = e.ConverseEquipType("COMPUTER")
-	if e.Type != 2 || err != nil {
-		t.Fatal("Failed test: COMPUTER is type 2")
-	}
-
-	err = e.ConverseEquipType("SUPPLY")
-	if e.Type != 3 || err != nil {
-		t.Fatal("Failed test: SUPPLY is type 3")
-	}
-
-	err = e.ConverseEquipType("CABLE")
-	if e.Type != 4 || err != nil {
-		t.Fatal("Failed test: CABLE is type 4")
-	}
-
-	err = e.ConverseEquipType("OTHER")
-	if e.Type != 0 || err != nil {
-		t.Fatal("Failed test: OTHER is type 0")
-	}
-
 	err = e.ConverseEquipType("UNDEFINED")
-	if err != BorrowEquipError {
+	if err != EquipConverseError {
 		t.Fatal("Failed test: UNDEFINED is type -: ", err)
 	}
 }
@@ -59,22 +39,22 @@ func TestUnconverseEquipState(t *testing.T) {
 }
 
 func TestParseAddText(t *testing.T) {
-	s := "EQUIP_NAME BOOK OWNER_NAME"
+	s := "\"EQUIP NAME\" BOOK OWNER_NAME"
 	e, err := parseAddText(s)
 
 	expectEquip := Equip{
-		Title: "EQUIP_NAME",
+		Title: "EQUIP NAME",
 		Type:  1,
 		Owner: "OWNER_NAME",
 	}
 	if err != nil {
-		t.Fatal("Failed test: ", err)
+    t.Fatal("Failed test: ", err, "in case s:", s)
 	}
 	if e != expectEquip {
-		t.Fatal("Failed test: parseAddText")
+		t.Fatal("Failed test: unexpected e:", e)
 	}
 
-	s = "EQUIP_NAME OTHER"
+	s = "\"EQUIP_NAME\" OTHER"
 	e, err = parseAddText(s)
 
 	expectEquip = Equip{
@@ -86,7 +66,7 @@ func TestParseAddText(t *testing.T) {
 		t.Fatal("Failed test: ", err)
 	}
 	if e != expectEquip {
-		t.Fatal("Failed test: parseAddText")
+		t.Fatal("Failed test: unexpected e:", e)
 	}
 }
 
